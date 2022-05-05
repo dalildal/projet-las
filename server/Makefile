@@ -1,12 +1,18 @@
 CFLAGS=-std=c11 -pedantic -Wall -Wvla -Werror -D_POSIX_C_SOURCE -D_DEFAULT_SOURCE
 
-PRG = server
+PRG = server maintenance pdr
 UTILS_PATH = ../
 
 all: $(PRG)
 
 server: server.c $(UTILS_PATH)utils_v1.h $(UTILS_PATH)utils_v1.o
 		cc $(CFLAGS) -o server server.c $(UTILS_PATH)utils_v1.o
+
+maintenance: maintenance.c $(UTILS_PATH)utils_v1.h $(UTILS_PATH)utils_v1.o
+		cc $(CFLAGS) -o maintenance maintenance.c $(UTILS_PATH)utils_v1.o
+
+pdr: pdr.c $(UTILS_PATH)utils_v1.h $(UTILS_PATH)utils_v1.o
+		cc $(CFLAGS) -o pdr pdr.c $(UTILS_PATH)utils_v1.o
 
 utils_v1.o: $(UTILS_PATH)utils_v1.c $(UTILS_PATH)utils_v1.h
 	$(CC) $(CCFLAGS) -c $(UTILS_PATH)utils_v1.c

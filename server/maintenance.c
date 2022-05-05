@@ -15,21 +15,21 @@
 
 int main(int argc, char const *argv[])
 {
-    int type = argv[1];
+    int type = strtol(argv[1], NULL, 10);
 
-    struct Payment* pay;
-    if( type == 1 ) {
-        int sizeStruct = sizeof(pay); 
+    if (type == 1)
+    {
+        // int sizeStruct = sizeof(pay);
 
-        //SEMAPHORE
-        int sem_id = sem_create(SEM_KEY, 1, PERM, 1);
+        // SEMAPHORE
+        sem_create(SEM_KEY, 1, PERM, 1);
 
-        //SHARED MEMORY
-      int shm_id = sshmget(KEY,(sizeof(pay)*SIZETAB), IPC_CREAT | IPC_EXCL | PERM);
-      int* z = sshmat(shm_id);
-      printf("Shared Memory created ssh_id : %d at adress %d: \n",shm_id,*z);
+        // SHARED MEMORY
+        int shm_id = sshmget(KEY, (sizeof(int) * SIZETAB), IPC_CREAT | IPC_EXCL | PERM);
+        int *tab = sshmat(shm_id);
+        printf("Shared Memory created ssh_id : %d at adress %d: \n", shm_id, *tab);
 
-      EXIT_SUCCESS;
+        EXIT_SUCCESS;
     }
 
     if (type == 2)
@@ -54,5 +54,3 @@ int main(int argc, char const *argv[])
         printf("Fin reservation\n");
     }
 }
-
-
