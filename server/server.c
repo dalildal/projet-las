@@ -12,32 +12,12 @@
 #define BACKLOG 5
 #define TIME_INSCRIPTION 15
 
-typedef struct Player
-{
-	char pseudo[MAX_PSEUDO];
-	int sockfd;
-	int shot;
-} Player;
-
 /* globals variables */
-Player tabPlayers[MAX_PLAYERS];
-volatile sig_atomic_t end_inscriptions = 0;
-// int end_inscriptions = 0;
-
+volatile sig_atomic_t end = 0;
 
 void endServerHandler(int sig)
 {
-	end_inscriptions = 1;
-}
-
-void terminate(Player *tabPlayers, int nbPlayers)
-{
-	printf("\nJoueurs inscrits : \n");
-	for (int i = 0; i < nbPlayers; i++)
-	{
-		printf("  - %s inscrit\n", tabPlayers[i].pseudo);
-	}
-	exit(0);
+  end = 1;
 }
 
 // PRE:  ServerPort: a valid port number
@@ -66,4 +46,17 @@ int initSocketServer(int port)
 int main(int argc, char **argv)
 {
 
+	StructMessage msg;
+	int sockfd = initSocketServer(SERVER_PORT);
+	printf("Le serveur tourne sur le port : %i \n", SERVER_PORT);
+
+	while (!end)
+	{
+
+		/* client trt */
+		int newsockfd = accept(sockfd, NULL, NULL);
+		checkNeg(newsockfd, "ERROR accept");
+
+		ssize_t ret = read(newsockfd, &msg, sizeof(msg));
+	}
 }
