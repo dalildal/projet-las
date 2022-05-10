@@ -6,18 +6,21 @@
 #include <unistd.h>
 
 #include "../messages.h"
+#include "../virement.h"
 #include "../utils_v1.h"
 
-#define MAX_PLAYERS 2
 #define BACKLOG 5
-#define TIME_INSCRIPTION 15
+#define SEM_KEY 667
+#define SHM_KEY 020
+#define PERM 0666
+#define SIZETAB 1000
 
 /* globals variables */
 volatile sig_atomic_t end = 0;
 
 void endServerHandler(int sig)
 {
-  end = 1;
+	end = 1;
 }
 
 // PRE:  ServerPort: a valid port number
@@ -45,10 +48,17 @@ int initSocketServer(int port)
 
 int main(int argc, char **argv)
 {
-
 	StructMessage msg;
-	int sockfd = initSocketServer(SERVER_PORT);
-	printf("Le serveur tourne sur le port : %i \n", SERVER_PORT);
+	Virement virement;
+
+	int port = strtol(argv[1], NULL, 10);
+	int sockfd = initSocketServer(port);
+	printf("Le serveur tourne sur le port : %d \n", port);
+
+	// Accès Mémoire Partagé + Semaphore
+	int shm_id = sshmget(SHM_KEY, SIZETAB * sizeof(int), 0);
+	int *tab = sshmat(shm_id);
+	int sem_id = sem_get(SEM_KEY, 1);
 
 	while (!end)
 	{
@@ -57,6 +67,26 @@ int main(int argc, char **argv)
 		int newsockfd = accept(sockfd, NULL, NULL);
 		checkNeg(newsockfd, "ERROR accept");
 
-		ssize_t ret = read(newsockfd, &msg, sizeof(msg));
+		ssize_t retMsg = read(newsockfd, &msg, sizeof(msg));
+		/*ssize_t retVir = */ read(newsockfd, &virement, sizeof(virement));
+
+		printf("%d et %d \n", virement.num_destinataire, virement.num_expediteur);
+		if (newsockfd > 0)
+		{
+			if (msg.code == VIREMENT)
+			{
+				if (virement.montant > 0)
+				{
+					tab[virement.num_destinataire] += virement.montant;
+					tab[virement.num_expediteur] -= virement.montant;
+					msg.code = VIREMENT_OK;
+				}
+				else
+				{
+					msg.code = VIREMENT_KO;
+				}
+			}
+			retMsg = swrite(newsockfd, &msg, sizeof(msg));
+		}
 	}
 }
