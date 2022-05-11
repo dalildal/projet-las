@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 	// Accès Mémoire Partagé + Semaphore
 	int shm_id = sshmget(SHM_KEY, SIZETAB * sizeof(int), 0);
 	int *tab = sshmat(shm_id);
-	int sem_id = sem_get(SEM_KEY, 1);
+	// int sem_id = sem_get(SEM_KEY, 1);
 
 	while (!end)
 	{
@@ -68,8 +68,8 @@ int main(int argc, char **argv)
 		checkNeg(newsockfd, "ERROR accept");
 
 		ssize_t retMsg = read(newsockfd, &msg, sizeof(msg));
-		/*ssize_t retVir = */ read(newsockfd, &virement, sizeof(virement));
-
+		/*ssiz	e_t retVir = */ read(newsockfd, &virement, sizeof(virement));
+		printf("%ld ", retMsg);
 		printf("%d et %d \n", virement.num_destinataire, virement.num_expediteur);
 		if (newsockfd > 0)
 		{
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 					msg.code = VIREMENT_KO;
 				}
 			}
-			retMsg = swrite(newsockfd, &msg, sizeof(msg));
 		}
+		retMsg = swrite(newsockfd, &msg, sizeof(msg));
 	}
 }
