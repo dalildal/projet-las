@@ -85,6 +85,8 @@ int main(int argc, char **argv)
 				{
 					tab[virement.num_destinataire] += virement.montant;
 					tab[virement.num_expediteur] -= virement.montant;
+					printf("OK : %d et %d \n", tab[virement.num_destinataire], tab[virement.num_expediteur]);
+
 					msg.code = VIREMENT_OK;
 				}
 				else
@@ -92,7 +94,7 @@ int main(int argc, char **argv)
 					msg.code = VIREMENT_KO;
 				}
 			}
+			swrite(newsockfd, &msg, sizeof(msg));
 		}
-		retMsg = swrite(newsockfd, &msg, sizeof(msg));
 	}
 }
