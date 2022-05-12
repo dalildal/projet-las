@@ -138,8 +138,8 @@ void virementSimple(char *cmd)
         fprintf(stderr, "???\n");
         return;
     }
-    char *montant;
-    if ((montant = strtok(NULL, " ")) == NULL)
+    char *n2;
+    if ((n2 = strtok(NULL, " ")) == NULL)
     {
         fprintf(stderr, "???\n");
         return;
@@ -151,7 +151,7 @@ void virementSimple(char *cmd)
         return;
     }
 
-    printf("%s\n", montant);
+    printf("%s et %s\n", n2, montant);
     sclose(sockfd);
 }
 
