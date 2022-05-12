@@ -22,9 +22,14 @@
 int initSocketClient(char ServerIP[16], int Serverport);
 void minuterie(void *delay);
 void virementRec();
+void virementSimple(char *cmd);
 
 // Variable
 int pipefd[2];
+char *adr;
+int port;
+int num;
+int delay;
 
 // PRE: ServierIP : a valid IP address
 //      ServerPort: a valid port number
@@ -45,23 +50,25 @@ int main(int argc, char **argv)
         printf("Nombre d'arguments incorrect \n");
         exit(0);
     }
-    printf("test 1 \n");
+    printf("**** PROGRAMME DE VIREMENT BANQUAIRE **** \n");
+    printf("\n");
+    printf("+ -> Virement Simple  \n");
+    printf("* -> Virement Récurrent  \n");
+    printf("q -> Quitter  \n");
+    printf("\n");
+
     // creation de la pipe
     int ret = spipe(pipefd);
     checkNeg(ret, "pipe error");
 
-    StructMessage msg;
-    Virement virement;
+    // StructMessage msg;
+    // Virement virement;
 
     // msg.messageText[ret - 1] = '\0';
-    char *adr = argv[1];
-    int port = atoi(argv[2]);
-    int num = atoi(argv[3]);
-    int delay = atoi(argv[4]);
-
-    virement.num_destinataire = 4;
-    virement.num_expediteur = 5;
-    virement.montant = 45;
+    adr = argv[1];
+    port = atoi(argv[2]);
+    num = atoi(argv[3]);
+    delay = atoi(argv[4]);
 
     int ppidMinute = fork_and_run1(minuterie, &delay);
     int ppidVirementRecurrent = fork_and_run0(virementRec);
@@ -74,9 +81,13 @@ int main(int argc, char **argv)
     while (true)
     {
         sread(0, cmd, BUFFER_SIZE);
-        printf("%d", cmd[0]);
+
         if (cmd[0] == '+')
         {
+            char *chaine = "J'envoie un virement au serveur\n";
+            size_t sz = strlen(chaine);
+            nwrite(0, chaine, sz);
+            virementSimple(cmd);
         }
         else if (cmd[0] == '*')
         {
@@ -91,30 +102,22 @@ int main(int argc, char **argv)
         }
     }
 
-    int sockfd = initSocketClient(adr, port);
-    swrite(sockfd, &msg, sizeof(msg));
-    swrite(sockfd, &virement, sizeof(virement));
-
     printf("%d minuterie %d", num, delay);
 
-    sclose(sockfd);
     return 0;
 }
 
 void minuterie(void *delay)
 {
-    printf("ICI 3 \n");
 
     /*Cast de void à int*/
     int *duration = delay;
     int durationInt = *duration;
     /*Fermeture de la pipe en lecture*/
     sclose(pipefd[0]);
-    printf("ICI \n");
 
     while (true)
     {
-        printf("ICI 2 \n");
 
         sleep(durationInt);
         char buffer[MAX_SIZE_PIPE];
@@ -124,7 +127,35 @@ void minuterie(void *delay)
     }
 }
 
+void virementSimple(char *cmd)
+{
+    cmd[strlen(cmd) - 1] = '\0';
+    int sockfd = initSocketClient(adr, port);
+
+    char *signe;
+    if ((signe = strtok(cmd, "\t \r")) == NULL)
+    {
+        fprintf(stderr, "???\n");
+        return;
+    }
+    char *montant;
+    if ((montant = strtok(NULL, " ")) == NULL)
+    {
+        fprintf(stderr, "???\n");
+        return;
+    }
+    char *montant;
+    if ((montant = strtok(NULL, " ")) == NULL)
+    {
+        fprintf(stderr, "???\n");
+        return;
+    }
+
+    printf("%s\n", montant);
+    sclose(sockfd);
+}
+
 void virementRec()
 {
-    printf("Récurrent\n");
+    // printf("Récurrent\n");
 }
