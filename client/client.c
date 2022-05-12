@@ -28,7 +28,7 @@ void virementSimple(char *cmd);
 int pipefd[2];
 char *adr;
 int port;
-int num;
+int num_exp;
 int delay;
 
 // PRE: ServierIP : a valid IP address
@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     // msg.messageText[ret - 1] = '\0';
     adr = argv[1];
     port = atoi(argv[2]);
-    num = atoi(argv[3]);
+    num_exp = atoi(argv[3]);
     delay = atoi(argv[4]);
 
     int ppidMinute = fork_and_run1(minuterie, &delay);
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
         }
     }
 
-    printf("%d minuterie %d", num, delay);
+    printf("%d minuterie %d", num_exp, delay);
 
     return 0;
 }
@@ -129,9 +129,14 @@ void minuterie(void *delay)
 
 void virementSimple(char *cmd)
 {
+    Virement virement;
+    StructMessage msg;
+    msg.code = VIREMENT;
+
     cmd[strlen(cmd) - 1] = '\0';
     int sockfd = initSocketClient(adr, port);
 
+    // *** On tronque la chaine
     char *signe;
     if ((signe = strtok(cmd, "\t \r")) == NULL)
     {
@@ -150,8 +155,26 @@ void virementSimple(char *cmd)
         fprintf(stderr, "???\n");
         return;
     }
+    // fin tronquage ***
 
-    printf("%s et %s\n", n2, montant);
+    virement.montant = atoi(montant);
+    virement.num_destinataire = atoi(n2);
+    virement.num_expediteur = num_exp;
+
+    swrite(sockfd, &msg, sizeof(msg));
+    swrite(sockfd, &virement, sizeof(virement));
+
+    /* wait server response */
+    sread(sockfd, &msg, sizeof(msg));
+
+    if (msg.code == VIREMENT_OK)
+    {
+        printf("Réponse du serveur : Virement effectué\n");
+    }
+    else
+    {
+        printf("Réponse du serveur : Virement à échoué\n");
+    }
     sclose(sockfd);
 }
 
