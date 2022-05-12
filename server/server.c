@@ -15,6 +15,9 @@
 #define PERM 0666
 #define SIZETAB 1000
 
+void endServerHandler(int sig);
+int initSocketServer(int port);
+
 /* globals variables */
 volatile sig_atomic_t end = 0;
 
@@ -59,6 +62,9 @@ int main(int argc, char **argv)
 	int shm_id = sshmget(SHM_KEY, SIZETAB * sizeof(int), 0);
 	int *tab = sshmat(shm_id);
 	// int sem_id = sem_get(SEM_KEY, 1);
+
+	// Ctrl-C
+	ssigaction(SIGINT, endServerHandler);
 
 	while (!end)
 	{
