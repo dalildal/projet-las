@@ -23,6 +23,9 @@ int initSocketClient(char ServerIP[16], int Serverport);
 void minuterie(void *delay);
 void virementRec();
 void virementSimple(char *cmd);
+Virement tronquerChaine(char *cmd);
+void addVirementRecurrent(char *cmd);
+void demandeExeServeur(int i);
 
 // Variable
 int pipefd[2];
@@ -84,13 +87,17 @@ int main(int argc, char **argv)
 
         if (cmd[0] == '+')
         {
-            char *chaine = "J'envoie un virement au serveur\n";
+            char *chaine = "Envoie d'un virement simple \n";
             size_t sz = strlen(chaine);
             nwrite(0, chaine, sz);
             virementSimple(cmd);
         }
         else if (cmd[0] == '*')
         {
+            char *chaine = "Envoie d'un virement récurrent \n";
+            size_t sz = strlen(chaine);
+            nwrite(0, chaine, sz);
+            addVirementRecurrent(cmd);
         }
 
         else if (cmd[0] == 'q')
@@ -109,7 +116,6 @@ int main(int argc, char **argv)
 
 void minuterie(void *delay)
 {
-
     /*Cast de void à int*/
     int *duration = delay;
     int durationInt = *duration;
@@ -118,13 +124,27 @@ void minuterie(void *delay)
 
     while (true)
     {
-
         sleep(durationInt);
         char buffer[MAX_SIZE_PIPE];
         /*b pour battement*/
         buffer[0] = 'b';
         nwrite(pipefd[1], &buffer, MAX_SIZE_PIPE * sizeof(char));
     }
+}
+
+void addVirementRecurrent(char *cmd)
+{
+    Virement virement;
+    virement = tronquerChaine(cmd);
+    char buffer[MAX_SIZE_PIPE];
+    buffer[0] = 'a';
+    buffer[2] = (char)virement.montant;
+    buffer[3] = (char)virement.num_expediteur;
+    buffer[4] = (char)virement.num_destinataire;
+
+    printf("ICI %d \n", buffer[2]);
+
+    nwrite(pipefd[1], &buffer, MAX_SIZE_PIPE * sizeof(char));
 }
 
 void virementSimple(char *cmd)
@@ -136,30 +156,7 @@ void virementSimple(char *cmd)
     cmd[strlen(cmd) - 1] = '\0';
     int sockfd = initSocketClient(adr, port);
 
-    // *** On tronque la chaine
-    char *signe;
-    if ((signe = strtok(cmd, "\t \r")) == NULL)
-    {
-        fprintf(stderr, "???\n");
-        return;
-    }
-    char *n2;
-    if ((n2 = strtok(NULL, " ")) == NULL)
-    {
-        fprintf(stderr, "???\n");
-        return;
-    }
-    char *montant;
-    if ((montant = strtok(NULL, " ")) == NULL)
-    {
-        fprintf(stderr, "???\n");
-        return;
-    }
-    // fin tronquage ***
-
-    virement.montant = atoi(montant);
-    virement.num_destinataire = atoi(n2);
-    virement.num_expediteur = num_exp;
+    virement = tronquerChaine(cmd);
 
     swrite(sockfd, &msg, sizeof(msg));
     swrite(sockfd, &virement, sizeof(virement));
@@ -177,8 +174,60 @@ void virementSimple(char *cmd)
     }
     sclose(sockfd);
 }
+void demandeExeServeur(int i)
+{
+}
 
 void virementRec()
 {
-    // printf("Récurrent\n");
+    /*Fermeture du pipe en écriture*/
+    sclose(pipefd[1]);
+    int tab[MAX_SIZE_RECURRENT];
+    int tailleLogique = 0;
+    while (true)
+    {
+        char buffer[BUFFER_SIZE];
+        sread(pipefd[0], buffer, BUFFER_SIZE * sizeof(char));
+        /*Si on recoit un a (pour add) de la part de l'ajout d'un programme récurrent (*) du main */
+        if (buffer[0] == 'a')
+        {
+            tab[tailleLogique] = atoi(buffer + 2);
+            tailleLogique++;
+        }
+        else
+        {
+            /*On a recu un battement donc on execute toute la liste*/
+            for (int i = 0; i < tailleLogique; i++)
+            {
+                demandeExeServeur(tab[i]);
+            }
+        }
+    }
+}
+
+Virement tronquerChaine(char *cmd)
+{
+    // *** On tronque la chaine
+    char *signe;
+    if ((signe = strtok(cmd, "\t \r")) == NULL)
+    {
+        fprintf(stderr, "???\n");
+    }
+    char *n2;
+    if ((n2 = strtok(NULL, " ")) == NULL)
+    {
+        fprintf(stderr, "???\n");
+    }
+    char *montant;
+    if ((montant = strtok(NULL, " ")) == NULL)
+    {
+        fprintf(stderr, "???\n");
+    }
+
+    Virement virement;
+    virement.montant = atoi(montant);
+    virement.num_destinataire = atoi(n2);
+    virement.num_expediteur = num_exp;
+
+    return virement;
 }
