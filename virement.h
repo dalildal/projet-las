@@ -5,7 +5,7 @@ typedef struct
 {
   int num_destinataire;
   int num_expediteur;
-  double montant;
+  int montant;
 } Virement;
 
 #endif
