@@ -51,6 +51,13 @@ int initSocketServer(int port)
 
 int main(int argc, char **argv)
 {
+
+	if (argc != 2)
+    {
+        printf("Nombre d'arguments incorrect \n");
+        exit(0);
+    }
+
 	StructMessage msg;
 	Virement virement;
 
