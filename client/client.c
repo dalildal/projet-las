@@ -127,10 +127,8 @@ void minuterie(void *delay)
         sleep(durationInt);
         char buffer[MAX_SIZE_PIPE];
         /*b pour battement*/
-        if (buffer[0] != 'a')
-        {
-            buffer[0] = 'b';
-        }
+        buffer[0] = 'b';
+
         nwrite(pipefd[1], &buffer, MAX_SIZE_PIPE * sizeof(char));
     }
 }
@@ -143,9 +141,9 @@ void addVirementRecurrent(char *cmd)
 
     char buffer[MAX_SIZE_PIPE];
     buffer[0] = 'a';
-    buffer[2] = (char)montant;
+    buffer[2] = (char)virement.num_destinataire;
     buffer[3] = (char)virement.num_expediteur;
-    buffer[4] = (char)virement.num_destinataire;
+    buffer[4] = (char)montant;
 
     nwrite(pipefd[1], &buffer, MAX_SIZE_PIPE * sizeof(char));
 }
@@ -178,13 +176,6 @@ void virementSimple(char *cmd)
     sclose(sockfd);
 }
 
-void execVirementRec(Virement vir)
-{
-    printf("%d \n", (int)vir.montant);
-    printf("%d \n", vir.num_destinataire);
-    printf("%d \n", vir.num_expediteur);
-}
-
 void virementRec()
 {
     /*Fermeture du pipe en écriture*/
@@ -199,16 +190,17 @@ void virementRec()
         if (buffer[0] == 'a')
         {
             Virement vir;
-            vir.montant = buffer[2];
+            printf("Montant %d \n", buffer[4]);
+            vir.montant = buffer[4];
             vir.num_expediteur = buffer[3];
-            vir.num_destinataire = buffer[4];
+            vir.num_destinataire = buffer[2];
             tab[tailleLogique] = vir;
             tailleLogique++;
             printf("TAILLE : %d\n", tailleLogique);
         }
         else
         {
-            /*On a recu un battement donc on execute toute la liste*/
+            /*On a recu un battement */
             for (int i = 0; i < tailleLogique; i++)
             {
                 execVirementRec(tab[i]);
@@ -217,6 +209,40 @@ void virementRec()
     }
 }
 
+void execVirementRec(Virement vir)
+{
+    //StructMessage msg;
+
+    printf("%d \n", vir.montant);
+    printf("%d \n", vir.num_destinataire);
+    printf("%d \n", vir.num_expediteur);
+
+    /*
+    int sockfd = initSocketClient(adr, port);
+    
+    msg.code = VIREMENT;
+    swrite(sockfd, &msg, sizeof(msg));
+    swrite(sockfd, &vir, sizeof(vir));
+
+    // wait server response 
+    sread(sockfd, &msg, sizeof(msg));
+
+    //wait server response 
+    sread(sockfd, &msg, sizeof(msg));
+
+    if (msg.code == VIREMENT_OK)
+    {
+        printf("Réponse du serveur : Virement effectué\n");
+    }
+    else
+    {
+        printf("Réponse du serveur : Virement à échoué\n");
+    }
+    sclose(sockfd);
+    */
+}
+
+// Permet de tronquer la chaine et la convertir en Virement
 Virement tronquerChaine(char *cmd)
 {
     // *** On tronque la chaine
