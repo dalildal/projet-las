@@ -16,7 +16,7 @@
 #define SHM_KEY 020
 #define PERM 0666
 #define BUFFER_SIZE 255
-#define MAX_SIZE_RECURRENT 100
+#define MAX_SIZE_RECURRENT 5
 #define MAX_SIZE_PIPE 10
 
 int initSocketClient(char ServerIP[16], int Serverport);
@@ -25,7 +25,7 @@ void virementRec();
 void virementSimple(char *cmd);
 Virement tronquerChaine(char *cmd);
 void addVirementRecurrent(char *cmd);
-void demandeExeServeur(int i);
+void execVirementRec(Virement vir);
 
 // Variable
 int pipefd[2];
@@ -127,7 +127,10 @@ void minuterie(void *delay)
         sleep(durationInt);
         char buffer[MAX_SIZE_PIPE];
         /*b pour battement*/
-        buffer[0] = 'b';
+        if (buffer[0] != 'a')
+        {
+            buffer[0] = 'b';
+        }
         nwrite(pipefd[1], &buffer, MAX_SIZE_PIPE * sizeof(char));
     }
 }
@@ -136,13 +139,13 @@ void addVirementRecurrent(char *cmd)
 {
     Virement virement;
     virement = tronquerChaine(cmd);
+    int montant = (int)virement.montant;
+
     char buffer[MAX_SIZE_PIPE];
     buffer[0] = 'a';
-    buffer[2] = (char)virement.montant;
+    buffer[2] = (char)montant;
     buffer[3] = (char)virement.num_expediteur;
     buffer[4] = (char)virement.num_destinataire;
-
-    printf("ICI %d \n", buffer[2]);
 
     nwrite(pipefd[1], &buffer, MAX_SIZE_PIPE * sizeof(char));
 }
@@ -174,32 +177,41 @@ void virementSimple(char *cmd)
     }
     sclose(sockfd);
 }
-void demandeExeServeur(int i)
+
+void execVirementRec(Virement vir)
 {
+    printf("%d \n", (int)vir.montant);
+    printf("%d \n", vir.num_destinataire);
+    printf("%d \n", vir.num_expediteur);
 }
 
 void virementRec()
 {
     /*Fermeture du pipe en écriture*/
     sclose(pipefd[1]);
-    int tab[MAX_SIZE_RECURRENT];
+    Virement tab[MAX_SIZE_RECURRENT];
     int tailleLogique = 0;
-    while (true)
+    while (tailleLogique != MAX_SIZE_RECURRENT)
     {
         char buffer[BUFFER_SIZE];
         sread(pipefd[0], buffer, BUFFER_SIZE * sizeof(char));
         /*Si on recoit un a (pour add) de la part de l'ajout d'un programme récurrent (*) du main */
         if (buffer[0] == 'a')
         {
-            tab[tailleLogique] = atoi(buffer + 2);
+            Virement vir;
+            vir.montant = buffer[2];
+            vir.num_expediteur = buffer[3];
+            vir.num_destinataire = buffer[4];
+            tab[tailleLogique] = vir;
             tailleLogique++;
+            printf("TAILLE : %d\n", tailleLogique);
         }
         else
         {
             /*On a recu un battement donc on execute toute la liste*/
             for (int i = 0; i < tailleLogique; i++)
             {
-                demandeExeServeur(tab[i]);
+                execVirementRec(tab[i]);
             }
         }
     }
