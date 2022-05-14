@@ -16,7 +16,7 @@
 #define SHM_KEY 020
 #define PERM 0666
 #define BUFFER_SIZE 255
-#define MAX_SIZE_RECURRENT 5
+#define MAX_SIZE_RECURRENT 100
 #define MAX_SIZE_PIPE 10
 
 int initSocketClient(char ServerIP[16], int Serverport);
@@ -64,15 +64,13 @@ int main(int argc, char **argv)
     int ret = spipe(pipefd);
     checkNeg(ret, "pipe error");
 
-    // StructMessage msg;
-    // Virement virement;
-
-    // msg.messageText[ret - 1] = '\0';
+    // Assignation des args a nos variables
     adr = argv[1];
     port = atoi(argv[2]);
     num_exp = atoi(argv[3]);
     delay = atoi(argv[4]);
 
+    // Création des fils
     int ppidMinute = fork_and_run1(minuterie, &delay);
     int ppidVirementRecurrent = fork_and_run0(virementRec);
 
@@ -81,6 +79,7 @@ int main(int argc, char **argv)
     checkNeg(retour, "close error");
     char cmd[BUFFER_SIZE];
 
+    /** TERMINAL **/
     while (true)
     {
         sread(0, cmd, BUFFER_SIZE);
@@ -114,42 +113,42 @@ int main(int argc, char **argv)
     return 0;
 }
 
+// Premier fils
 void minuterie(void *delay)
 {
-    /*Cast de void à int*/
     int *duration = delay;
     int durationInt = *duration;
+
     /*Fermeture de la pipe en lecture*/
     sclose(pipefd[0]);
 
     while (true)
     {
-        char *chaine = "b\n";
-        size_t sz = strlen(chaine);
-        nwrite(0, chaine, sz);
         sleep(durationInt);
-        char buffer[MAX_SIZE_PIPE];
-        /*b pour battement*/
-        buffer[0] = 'b';
-        nwrite(pipefd[1], &buffer, MAX_SIZE_PIPE * sizeof(char));
+        int buffer[MAX_SIZE_PIPE];
+        // 1 pour un battement
+        buffer[0] = 1;
+        nwrite(pipefd[1], &buffer, MAX_SIZE_PIPE * sizeof(int));
     }
 }
 
+// Tronque la commande en parametre et ajoute un virement à la pipe
 void addVirementRecurrent(char *cmd)
 {
     Virement virement;
     virement = tronquerChaine(cmd);
-    int montant = (int)virement.montant;
+    int montant = virement.montant;
 
-    char buffer[MAX_SIZE_PIPE];
-    buffer[0] = 'a';
-    buffer[2] = (char)virement.num_destinataire;
-    buffer[3] = (char)virement.num_expediteur;
-    buffer[4] = (char)montant;
+    int buffer[MAX_SIZE_PIPE];
+    buffer[0] = 0;
+    buffer[2] = virement.num_destinataire;
+    buffer[3] = virement.num_expediteur;
+    buffer[4] = montant;
 
-    nwrite(pipefd[1], &buffer, MAX_SIZE_PIPE * sizeof(char));
+    nwrite(pipefd[1], &buffer, MAX_SIZE_PIPE * sizeof(int));
 }
 
+// Tronque la commande en parametre et envoie le virement au serveur
 void virementSimple(char *cmd)
 {
     Virement virement;
@@ -178,60 +177,56 @@ void virementSimple(char *cmd)
     sclose(sockfd);
 }
 
+// Deuxieme fils
 void virementRec()
 {
-    /*Fermeture du pipe en écriture*/
+    // Fermeture du pipe en écriture
     sclose(pipefd[1]);
     Virement tab[MAX_SIZE_RECURRENT];
-    
-    int tailleLogique = 0;
-    while (tailleLogique != MAX_SIZE_RECURRENT)
+
+    int tailleL = 0;
+    int nbRecurrence = 0;
+    while (nbRecurrence <= MAX_SIZE_RECURRENT)
     {
-        char buffer[BUFFER_SIZE];
-        sread(pipefd[0], buffer, BUFFER_SIZE * sizeof(char));
-        /*Si on recoit un a (pour add) de la part de l'ajout d'un programme récurrent (*) du main */
-        if (buffer[0] == 'a')
+        int buffer[BUFFER_SIZE];
+        sread(pipefd[0], buffer, BUFFER_SIZE * sizeof(int));
+        // Si on recoit un 0 de la pipe
+        if (buffer[0] == 0)
         {
             Virement vir;
-            printf("Montant %d \n", buffer[4]);
             vir.montant = buffer[4];
             vir.num_expediteur = buffer[3];
             vir.num_destinataire = buffer[2];
-            tab[tailleLogique] = vir;
-            tailleLogique++;
-            printf("TAILLE : %d\n", tailleLogique);
+            tab[tailleL] = vir;
+            tailleL++;
+            nbRecurrence++;
         }
         else
         {
-            /*On a recu un battement */
-            for (int i = 0; i < tailleLogique; i++)
+            if (nbRecurrence > 0)
             {
-                execVirementRec(tab[i]);
-            }        
-            tailleLogique = 0;
+                // On a recu un battement
+                for (int i = 0; i < tailleL; i++)
+                {
+                    execVirementRec(tab[i]);
+                }
+                nbRecurrence++;
+            }
         }
     }
 }
-
+// Envoie un par un les viremetns récurrent au serveur
 void execVirementRec(Virement vir)
 {
-    //StructMessage msg;
+    StructMessage msg;
 
-    printf("%d \n", vir.montant);
-    printf("%d \n", vir.num_destinataire);
-    printf("%d \n", vir.num_expediteur);
-
-    /*
     int sockfd = initSocketClient(adr, port);
-    
+
     msg.code = VIREMENT;
     swrite(sockfd, &msg, sizeof(msg));
     swrite(sockfd, &vir, sizeof(vir));
 
-    // wait server response 
-    sread(sockfd, &msg, sizeof(msg));
-
-    //wait server response 
+    // wait server response
     sread(sockfd, &msg, sizeof(msg));
 
     if (msg.code == VIREMENT_OK)
@@ -243,13 +238,12 @@ void execVirementRec(Virement vir)
         printf("Réponse du serveur : Virement à échoué\n");
     }
     sclose(sockfd);
-    */
 }
 
 // Permet de tronquer la chaine et la convertir en Virement
 Virement tronquerChaine(char *cmd)
 {
-    // *** On tronque la chaine
+    // On tronque la chaine
     char *signe;
     if ((signe = strtok(cmd, "\t \r")) == NULL)
     {
