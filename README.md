@@ -1,5 +1,5 @@
 # projet-las
-Projet LAS
+# Projet Linux Appel Système
 Ce projet consiste à construire un système distribué simulant le fonctionnement d’une banque
 en ligne.
 Il permettra de simuler un nombre d’opérations relativement limitées qui sont généralement
