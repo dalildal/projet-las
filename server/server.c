@@ -33,11 +33,7 @@ void endServerHandler(int sig)
 int initSocketServer(int port)
 {
 	int sockfd = ssocket();
-
-	/* no socket error */
-
 	sbind(port, sockfd);
-
 	/* no bind error */
 	slisten(sockfd, BACKLOG);
 
@@ -53,10 +49,10 @@ int main(int argc, char **argv)
 {
 
 	if (argc != 2)
-    {
-        printf("Nombre d'arguments incorrect \n");
-        exit(0);
-    }
+	{
+		printf("Nombre d'arguments incorrect \n");
+		exit(0);
+	}
 
 	StructMessage msg;
 	Virement virement;
@@ -77,15 +73,17 @@ int main(int argc, char **argv)
 	while (!end)
 	{
 
-		/* client trt */
+		// traitement clien
 		int newsockfd = accept(sockfd, NULL, NULL);
 		checkNeg(newsockfd, "ERROR accept");
 
-		/* message du client */
-		ssize_t retMsg = read(newsockfd, &msg, sizeof(msg));
+		// message client
+		read(newsockfd, &msg, sizeof(msg));
+
+		// virement client
 		read(newsockfd, &virement, sizeof(virement));
-		printf("%ld ", retMsg);
-		printf("%d et %d \n", virement.num_destinataire, virement.num_expediteur);
+		printf("%d souhaite faire un virement de  %d à %d \n", virement.num_expediteur, virement.montant, virement.num_destinataire);
+
 		if (newsockfd > 0)
 		{
 			if (msg.code == VIREMENT)
@@ -94,7 +92,7 @@ int main(int argc, char **argv)
 				{
 					tab[virement.num_destinataire] += virement.montant;
 					tab[virement.num_expediteur] -= virement.montant;
-					printf("OK : %d et %d \n", tab[virement.num_destinataire], tab[virement.num_expediteur]);
+					printf("Virement OK,  Solde destinataire : %d et Solde Expediteur : %d \n", tab[virement.num_destinataire], tab[virement.num_expediteur]);
 					msg.code = VIREMENT_OK;
 				}
 				else
