@@ -124,13 +124,13 @@ void minuterie(void *delay)
 
     while (true)
     {
+        char *chaine = "b\n";
+        size_t sz = strlen(chaine);
+        nwrite(0, chaine, sz);
         sleep(durationInt);
         char buffer[MAX_SIZE_PIPE];
         /*b pour battement*/
-        if (buffer[0] != 'a')
-        {
-            buffer[0] = 'b';
-        }
+        buffer[0] = 'b';
         nwrite(pipefd[1], &buffer, MAX_SIZE_PIPE * sizeof(char));
     }
 }
@@ -180,9 +180,9 @@ void virementSimple(char *cmd)
 
 void execVirementRec(Virement vir)
 {
-    printf("%d \n", (int)vir.montant);
-    printf("%d \n", vir.num_destinataire);
-    printf("%d \n", vir.num_expediteur);
+    printf("montant : %d \n", (int)vir.montant);
+    printf("destinataire : %d \n", vir.num_destinataire);
+    printf("expediteur : %d \n", vir.num_expediteur);
 }
 
 void virementRec()
@@ -190,6 +190,7 @@ void virementRec()
     /*Fermeture du pipe en écriture*/
     sclose(pipefd[1]);
     Virement tab[MAX_SIZE_RECURRENT];
+    
     int tailleLogique = 0;
     while (tailleLogique != MAX_SIZE_RECURRENT)
     {
@@ -212,7 +213,8 @@ void virementRec()
             for (int i = 0; i < tailleLogique; i++)
             {
                 execVirementRec(tab[i]);
-            }
+            }        
+            tailleLogique = 0;
         }
     }
 }

@@ -61,6 +61,7 @@ int main(int argc, char **argv)
 	StructMessage msg;
 	Virement virement;
 
+	// convert char to int
 	int port = strtol(argv[1], NULL, 10);
 	int sockfd = initSocketServer(port);
 	printf("Le serveur tourne sur le port : %d \n", port);
@@ -80,8 +81,9 @@ int main(int argc, char **argv)
 		int newsockfd = accept(sockfd, NULL, NULL);
 		checkNeg(newsockfd, "ERROR accept");
 
+		/* message du client */
 		ssize_t retMsg = read(newsockfd, &msg, sizeof(msg));
-		/*ssiz	e_t retVir = */ read(newsockfd, &virement, sizeof(virement));
+		read(newsockfd, &virement, sizeof(virement));
 		printf("%ld ", retMsg);
 		printf("%d et %d \n", virement.num_destinataire, virement.num_expediteur);
 		if (newsockfd > 0)
@@ -93,7 +95,6 @@ int main(int argc, char **argv)
 					tab[virement.num_destinataire] += virement.montant;
 					tab[virement.num_expediteur] -= virement.montant;
 					printf("OK : %d et %d \n", tab[virement.num_destinataire], tab[virement.num_expediteur]);
-
 					msg.code = VIREMENT_OK;
 				}
 				else
