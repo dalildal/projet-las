@@ -15,35 +15,34 @@
 
 int main(int argc, char const *argv[])
 {
+
+    if (argc != 3)
+    {
+        printf("Nombre d'arguments incorrect \n");
+        exit(0);
+    }
+
+    // convert char to int
     int num_compte = strtol(argv[1], NULL, 10);;
     int montant = strtol(argv[2], NULL, 10);;
 
+    // Accès Mémoire Partagé
     int shm_id = sshmget(SHM_KEY, SIZETAB * sizeof(int), 0);
     int *tab = sshmat(shm_id);
     int sem_id = sem_get(SEM_KEY, 1);
 
-    for (int i = 0; i < 10; i++)
-    {
-       printf("%i %d\n", i, tab[i]);
-    }
-
     if( montant > 0) {
         sem_down0(sem_id);
         tab[num_compte] += montant;
-        printf("--> %d\n",tab[num_compte]);
+        //printf("nouveau solde --> %d\n",tab[num_compte]);
         sem_up0(sem_id);
     } else{
         sem_down0(sem_id);
-        tab[num_compte] += montant;
-        printf("--> %d\n",tab[num_compte]);
+        tab[num_compte] += montant;  
         sem_up0(sem_id);
     }
-
-    for (int i = 0; i < 10; i++)
-    {
-       printf("%i %d\n", i, tab[i]);
-    }
     
+    printf("nouveau solde du compte n° %d --> %d\n",num_compte,tab[num_compte]);
     sshmdt(tab);
 
     exit(EXIT_SUCCESS);

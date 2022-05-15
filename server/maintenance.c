@@ -19,12 +19,10 @@ int main(int argc, char const *argv[])
 
     if (type == 1)
     {
-        // int sizeStruct = sizeof(pay);
-
-        // SEMAPHORE
+        //creation Semaphore
         sem_create(SEM_KEY, 1, PERM, 1);
 
-        // SHARED MEMORY
+        // Accès Mémoire Partagé
         int shm_id = sshmget(KEY, (sizeof(int) * SIZETAB), IPC_CREAT | IPC_EXCL | PERM);
         int *tab = sshmat(shm_id);
         printf("Shared Memory created ssh_id : %d at adress %d: \n", shm_id, *tab);
@@ -32,6 +30,7 @@ int main(int argc, char const *argv[])
         EXIT_SUCCESS;
     }
 
+    //détruit la mémoire partagée
     if (type == 2)
     {
         int shm_id = sshmget(KEY, 0, 0);
@@ -43,7 +42,7 @@ int main(int argc, char const *argv[])
         printf("Semaphore avec l'adress : %d est détruite \n", sem_id);
     }
 
-    // TYPE = 3 -> On réserve de façon exclusive le livre de comptes partagé
+    // Réserve de façon exclusive le livre de comptes partagé
     if (type == 3)
     {
         long int tempsRes = strtol(argv[2], NULL, 10);
