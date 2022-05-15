@@ -55,11 +55,11 @@ int main(int argc, char **argv)
     }
     printf("**** PROGRAMME DE VIREMENT BANQUAIRE **** \n");
     printf("\n");
-    printf("+ -> Virement Simple  \n");
-    printf("* -> Virement Récurrent  \n");
+    printf("+ -> Virement Simple '+ num montant'\n");
+    printf("* -> Virement Récurrent '* num montant'\n");
     printf("q -> Quitter  \n");
     printf("\n");
-
+    
     // creation de la pipe
     int ret = spipe(pipefd);
     checkNeg(ret, "pipe error");
